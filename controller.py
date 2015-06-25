@@ -61,9 +61,11 @@ class Door(object):
         state = self.get_state()
         if (state == 'open'):
             self.last_action = 'close'
+            self.send_closedoor_message()
             self.last_action_time = time.time()
         elif state == 'closed':
             self.last_action = 'open'
+            self.send_opendoor_message()
             self.last_action_time = time.time()
         else:
             self.last_action = None
@@ -72,6 +74,28 @@ class Door(object):
         gpio.output(self.relay_pin, False)
         time.sleep(0.2)
         gpio.output(self.relay_pin, True)
+        
+    def send_opendoor_message(self):
+        syslog.syslog("Sending open door message.")
+        config = self.config['smtp']
+        server = smtplib.SMTP(config["smtphost"], config["smtpport"])
+        if (config["smtp_tls"] == "True") :
+            server.starttls()
+        server.login(config["username"], config["password"])
+        message = "Your garage door %s have been opened." % self.name
+        server.sendmail(config["username"], config["to_email"], message)
+        server.close()
+    
+     def send_closedoor_message(self):
+        syslog.syslog("Sending close door message.")
+        config = self.config['smtp']
+        server = smtplib.SMTP(config["smtphost"], config["smtpport"])
+        if (config["smtp_tls"] == "True") :
+            server.starttls()
+        server.login(config["username"], config["password"])
+        message = "Your garage door %s have been closed." % self.name
+        server.sendmail(config["username"], config["to_email"], message)
+        server.close() 
 
 class Controller():
     def __init__(self, config):
